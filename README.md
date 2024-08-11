@@ -23,4 +23,4 @@
 * Changing the resolution of the game will result in different outline widths.
 
 # Preview
-![alt-text](https://github.com/CristianQiu/Unity-Packages-Gifs/blob/main/URP-Outline/Teaser.gif)
+![alt-text](https://github.com/CristianQiu/Unity-Packages-Gifs/blob/main/URP-Outline/Teaser.jpg)
