@@ -1,6 +1,6 @@
 # About
 
-* A simple outline render feature for Unity 6 URP and rendergraph.
+* Unity package that includes a simple outline render feature for Unity 6 URP and rendergraph.
 * Integrated with URP volume system.
 * Uses rendering layers.
 * Perfect for fast prototyping, since no other components-shaders are needed.
