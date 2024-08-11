@@ -1,0 +1,19 @@
+{
+    "name": "com.cqf.urpoutline",
+    "version": "0.1.0",
+    "displayName": "URP Outline",
+    "description": "A simple outline render feature for Unity 6 URP and rendergraph. Uses URP volume system and rendering layers.",
+    "unity": "6000.0",
+    "unityRelease": "0f1",
+    "dependencies": {
+      "com.unity.render-pipelines.universal": ""
+    },
+    "keywords": [
+      "outline"
+    ],
+    "author": {
+      "name": "Cristian Qiu F\u00e9lez",
+      "email": "cristianqiufelez@gmail.com",
+      "url": "http://cristianqiu.github.io/web"
+    }
+  }
