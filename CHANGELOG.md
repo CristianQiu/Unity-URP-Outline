@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.21] - 2024-09-24
+
+* Prevent warning when using GPU resident drawer.
+
 ## [0.1.2] - 2024-09-23
 
 * Added support for the GPU resident drawer.
