@@ -19,24 +19,36 @@ Shader "Hidden/Outline"
 
             HLSLPROGRAM
 
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityDOTSInstancing.hlsl"
+
+            // Needed to support the GPU resident drawer. 
+            // Note that I have removed stuff that it seems I do not need.
+            // See https://gamedev.center/how-to-write-a-custom-urp-shader-with-dots-instancing-support/
+            #pragma target 4.5
+
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+
             #pragma vertex Vert
             #pragma fragment Frag
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             Varyings Vert(Attributes IN)
             {
                 Varyings OUT;
+
+                UNITY_SETUP_INSTANCE_ID(IN);
 
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
 
