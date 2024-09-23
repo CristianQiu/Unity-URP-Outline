@@ -49,6 +49,7 @@ Shader "Hidden/Outline"
                 Varyings OUT;
 
                 UNITY_SETUP_INSTANCE_ID(IN);
+                UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
 
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
 
