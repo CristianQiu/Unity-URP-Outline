@@ -54,11 +54,12 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	private static readonly int BlurKernelRadiusId = Shader.PropertyToID("_BlurKernelRadius");
 	private static readonly int BlurStandardDeviationId = Shader.PropertyToID("_BlurStandardDeviation");
 	private static readonly int OutlineFallOffId = Shader.PropertyToID("_OutlineFallOff");
+	private static readonly int FillAlphaId = Shader.PropertyToID("_FillAlpha");
 
 	private static readonly int RenderObjectsTargetId = Shader.PropertyToID("_OutlineRenderedObjectsMaskTexture");
 	private static readonly int BlurredRenderObjectsTargetId = Shader.PropertyToID("_OutlineBlurredRenderedObjectsMaskTexture");
 
-	public Material outlineMaterial;
+	private Material outlineMaterial;
 
 	#endregion
 
@@ -222,6 +223,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 
 			outlineMaterial.SetColor(OutlineColorId, outlineVolume.color.value);
 			outlineMaterial.SetFloat(OutlineFallOffId, outlineVolume.fallOff.value);
+			outlineMaterial.SetFloat(FillAlphaId, outlineVolume.fillAlpha.value);
 
 			outlineMaterial.SetTexture(RenderObjectsTargetId, passData.renderObjectsTarget);
 			outlineMaterial.SetTexture(BlurredRenderObjectsTargetId, passData.blurredRenderObjectsTarget);

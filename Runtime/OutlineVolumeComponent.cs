@@ -13,8 +13,9 @@ public sealed class OutlineVolumeComponent : VolumeComponent, IPostProcessCompon
 	#region Public Attributes
 
 	public ColorParameter color = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), true, true, true, true);
-	public ClampedIntParameter blurRadius = new ClampedIntParameter(5, 2, 32, false);
-	public ClampedFloatParameter fallOff = new ClampedFloatParameter(0.015f, 0.0f, 1.0f, false);
+	public ClampedIntParameter blurRadius = new ClampedIntParameter(5, 2, 32);
+	public ClampedFloatParameter fallOff = new ClampedFloatParameter(0.015f, 0.0f, 1.0f);
+	public ClampedFloatParameter fillAlpha = new ClampedFloatParameter(0.0f, 0.0f, 1.0f);
 
 	#endregion
 
@@ -35,7 +36,7 @@ public sealed class OutlineVolumeComponent : VolumeComponent, IPostProcessCompon
 	/// <returns></returns>
 	public bool IsActive()
 	{
-		return color.value.a > 0.0f;
+		return color.value.a > 0.0f || fillAlpha.value > 0.0f;
 	}
 
 	#endregion

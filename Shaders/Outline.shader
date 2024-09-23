@@ -135,6 +135,7 @@ Shader "Hidden/Outline"
 
             float4 _OutlineColor;
             float _OutlineFallOff;
+            float _FillAlpha;
 
             float4 Frag(Varyings input) : SV_Target
             {
@@ -152,6 +153,9 @@ Shader "Hidden/Outline"
 
                 // alpha can be used to fade out the final outline
                 outlineAlpha *= _OutlineColor.a;
+
+                // if mask is greater than 1.0, then use the fill alpha, otherwise keep the outline alpha
+                outlineAlpha = lerp(outlineAlpha, _FillAlpha, step(1.0, mask));
 
                 // finally blend the outline color with the existing camera color
                 float3 composedColor = cameraColor.rgb * (1.0 - outlineAlpha) + (_OutlineColor.rgb * outlineAlpha);
