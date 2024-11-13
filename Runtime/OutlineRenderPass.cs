@@ -91,6 +91,9 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	public OutlineRenderPass(Material outlineMaterial) : base()
 	{
 		profilingSampler = new ProfilingSampler("Outline");
+
+		// Note: we could use before post processing to take advantage of things like HDR colors for free.
+		// There are several problems with this, the main one is that DoF blurs the outline, which feels weird in some situations.
 		renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
 		requiresIntermediateTexture = false;
 

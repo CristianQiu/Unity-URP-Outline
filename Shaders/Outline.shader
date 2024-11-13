@@ -201,7 +201,7 @@ Shader "Hidden/Outline"
             {
                 // get the camera color, the original objects render mask, and the expanded (blurred) mask
                 float4 cameraColor = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, input.texcoord);
-                float4 mask = SAMPLE_TEXTURE2D_X(_OutlineRenderedObjectsMaskTexture, sampler_LinearClamp, input.texcoord);
+                float4 mask = SAMPLE_TEXTURE2D_X(_OutlineRenderedObjectsMaskTexture, sampler_PointClamp, input.texcoord);
                 float4 blurredMask = SAMPLE_TEXTURE2D_X(_OutlineBlurredRenderedObjectsMaskTexture, sampler_LinearClamp, input.texcoord);
 
                 // subtract the original mask to the blurred mask to resolve the outline
@@ -217,22 +217,20 @@ Shader "Hidden/Outline"
                 // if mask is greater than 1.0, then use the fill alpha, otherwise keep the outline alpha
                 outlineAlphas = lerp(outlineAlphas, _FillAlphas, step(1.0, mask));
 
+                // calculate the maximum alpha for when several layers intersect on screen
                 float maxAlpha = Max3(outlineAlphas.x, outlineAlphas.y, max(outlineAlphas.z, outlineAlphas.w));
 
+                // calculate each layer color individually
                 float3 layer1Color = _OutlineColors[0].rgb * step(0.0, blurredMask.r) * outlineAlphas.r;
                 float3 layer2Color = _OutlineColors[1].rgb * step(0.0, blurredMask.g) * outlineAlphas.g;
                 float3 layer3Color = _OutlineColors[2].rgb * step(0.0, blurredMask.b) * outlineAlphas.b;
                 float3 layer4Color = _OutlineColors[3].rgb * step(0.0, blurredMask.a) * outlineAlphas.a;
 
+                // calculate the total color for when the layers overlap
                 float3 layersSumColor = layer1Color + layer2Color + layer3Color + layer4Color;
 
+                // blend the color with the background 
                 float3 composedColor = cameraColor.rgb * (1.0 - maxAlpha) + (layersSumColor * maxAlpha);
-
-                // float3 outlineAndFillColor = (_OutlineColors[0].rgb) + (_OutlineColors[1].rgb) + (_OutlineColors[2].rgb) + (_OutlineColors[3].rgb);
-                // float4 result = float4(outlineAndFillColor * maxAlpha, 1.0);
-
-                // // finally blend the outline color with the existing camera color
-                // float3 composedColor = cameraColor.rgb * (1.0.xxx - outlineAlphas.rgb) + (_OutlineColors[0].rrr * outlineAlphas.rgb);
 
                 return float4(composedColor, cameraColor.a);
             }
