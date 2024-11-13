@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2] - 2024-11-13
+
+* Added up to 4 layers for different colors, each one associated to a rendering layer mask.
+
 ## [0.1.21] - 2024-09-24
 
 * Prevent warning when using GPU resident drawer.
