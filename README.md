@@ -20,7 +20,8 @@
 * If you want to apply some sort of antialiasing to the outline, using Unity's FXAA is currently the only option.
 * Since postprocessing is not applied to the outline, some effects like HDR glow won't work.
 * Changing the resolution of the game will result in slightly different outline widths.
-* Some postprocessing effects like exaggerated Panini Projection may break the connection between the object and its outline, since the outline is applied after postprocessing by default. 
+* Some postprocessing effects like exaggerated Panini Projection may break the connection between the object and its outline, since the outline is applied after postprocessing by default.
+* Alpha clip not supported.
 
 # Preview
 ![alt-text](https://github.com/CristianQiu/Unity-Packages-Gifs/blob/main/URP-Outline/Teaser.jpg)
