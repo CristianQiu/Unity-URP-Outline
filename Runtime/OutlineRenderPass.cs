@@ -89,7 +89,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 
 		// Note: we could use before post processing to take advantage of things like HDR colors for free.
 		// There are several problems with this, the main one is that DoF blurs the outline, which feels weird in some situations.
-		renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+		renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
 		requiresIntermediateTexture = false;
 
 		this.outlineMaterial = outlineMaterial;
