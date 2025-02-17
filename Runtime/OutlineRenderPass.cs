@@ -207,8 +207,6 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 		cameraTargetDescriptor.depthBufferBits = (int)DepthBits.None;
 		resolveTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineResolve", false);
 
-		cameraTargetDescriptor.msaaSamples = 1;
-		
 		cameraTargetDescriptor.colorFormat = RenderTextureFormat.ARGB32;
 		
 		nonBlurredCombinedMask = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineCombinedMask", false, FilterMode.Point);
