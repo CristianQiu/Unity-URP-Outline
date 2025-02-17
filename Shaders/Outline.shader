@@ -14,8 +14,8 @@ Shader "Hidden/Outline"
             ZTest Always
             ZWrite Off
             Cull Off
-            Blend Off
-            ColorMask R
+            Blend One One
+//            ColorMask R
 
             HLSLPROGRAM
 
@@ -31,6 +31,8 @@ Shader "Hidden/Outline"
 
             #pragma vertex Vert
             #pragma fragment Frag
+
+            float4 _MaskColour = float4(1,1,1,1);
 
             struct Attributes
             {
@@ -56,9 +58,9 @@ Shader "Hidden/Outline"
                 return OUT;
             }
 
-            float Frag() : SV_Target
+            float4 Frag() : SV_Target
             {
-                return 1.0;
+                return _MaskColour;
             }
 
             ENDHLSL
@@ -164,7 +166,7 @@ Shader "Hidden/Outline"
         {
             Name "OutlineResolve"
             
-            ZTest Always
+            ZTest Greater
             ZWrite Off
             Cull Off
             Blend Off
