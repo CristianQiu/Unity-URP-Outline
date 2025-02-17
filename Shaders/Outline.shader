@@ -15,7 +15,6 @@ Shader "Hidden/Outline"
             ZWrite Off
             Cull Off
             Blend One One
-//            ColorMask R
 
             HLSLPROGRAM
 
@@ -32,7 +31,7 @@ Shader "Hidden/Outline"
             #pragma vertex Vert
             #pragma fragment Frag
 
-            float4 _MaskColour = float4(1,1,1,1);
+            float4 _MaskColour;
 
             struct Attributes
             {
