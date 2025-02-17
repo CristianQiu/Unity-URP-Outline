@@ -60,11 +60,6 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	private static readonly uint RenderingLayerMaskB = RenderingLayerMask.GetMask("Outline_3");
 	private static readonly uint RenderingLayerMaskA = RenderingLayerMask.GetMask("Outline_4");
 
-	private static readonly int OutlineRTextureId = Shader.PropertyToID("_Outline_R");
-	private static readonly int OutlineGTextureId = Shader.PropertyToID("_Outline_G");
-	private static readonly int OutlineBTextureId = Shader.PropertyToID("_Outline_B");
-	private static readonly int OutlineATextureId = Shader.PropertyToID("_Outline_A");
-
 	private static readonly int BlurKernelRadiusId = Shader.PropertyToID("_BlurKernelRadius");
 	private static readonly int BlurStandardDeviationId = Shader.PropertyToID("_BlurStandardDeviation");
 
