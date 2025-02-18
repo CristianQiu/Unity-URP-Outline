@@ -39,11 +39,6 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 
 		public UniversalCameraData cameraData;
 
-		public TextureHandle renderObjectsTargetR;
-		public TextureHandle renderObjectsTargetG;
-		public TextureHandle renderObjectsTargetB;
-		public TextureHandle renderObjectsTargetA;
-
 		public RendererListHandle rendererListHandleR;
 		public RendererListHandle rendererListHandleG;
 		public RendererListHandle rendererListHandleB;
@@ -64,11 +59,6 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	private static readonly uint RenderingLayerMaskG = RenderingLayerMask.GetMask("Outline_2");
 	private static readonly uint RenderingLayerMaskB = RenderingLayerMask.GetMask("Outline_3");
 	private static readonly uint RenderingLayerMaskA = RenderingLayerMask.GetMask("Outline_4");
-
-	private static readonly int OutlineRTextureId = Shader.PropertyToID("_Outline_R");
-	private static readonly int OutlineGTextureId = Shader.PropertyToID("_Outline_G");
-	private static readonly int OutlineBTextureId = Shader.PropertyToID("_Outline_B");
-	private static readonly int OutlineATextureId = Shader.PropertyToID("_Outline_A");
 
 	private static readonly int BlurKernelRadiusId = Shader.PropertyToID("_BlurKernelRadius");
 	private static readonly int BlurStandardDeviationId = Shader.PropertyToID("_BlurStandardDeviation");
@@ -115,20 +105,18 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 		UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
 		UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
 
-		CreateRenderGraphTextures(renderGraph, cameraData, out TextureHandle renderObjectsTargetR, out TextureHandle renderObjectsTargetG, out TextureHandle renderObjectsTargetB, out TextureHandle renderObjectsTargetA, out TextureHandle outlineCombinedMask, out TextureHandle horizontalBlurTarget, out TextureHandle verticalBlurTarget, out TextureHandle resolveTarget);
+		CreateRenderGraphTextures(renderGraph, cameraData, out TextureHandle outlineCombinedMask, out TextureHandle horizontalBlurTarget, out TextureHandle verticalBlurTarget, out TextureHandle resolveTarget);
 
 		// Note: I spent a day and have not managed to render each outline layer into a color channel from a single texture.
 		// So instead, 4 textures with one channel each are used and then combined into the texture that is then blurred to expand the outline.
 		// It is not ideal, but at least it works.
+		// hours burnt trying to make it work after that: 4
+		
 		using (IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass("Outline Render Objects Pass", out PassData passData, profilingSampler))
 		{
 			passData.stage = PassStage.RenderObjects;
 			passData.target = verticalBlurTarget; // < The target is where the combined R,G,B,A channels are going to be combined. We reuse the second directional blur pass texture, although rendergraph may be doing that already.
 			passData.cameraData = cameraData;
-			passData.renderObjectsTargetR = renderObjectsTargetR;
-			passData.renderObjectsTargetG = renderObjectsTargetG;
-			passData.renderObjectsTargetB = renderObjectsTargetB;
-			passData.renderObjectsTargetA = renderObjectsTargetA;
 			passData.nonBlurredCombinedMask = outlineCombinedMask;
 			passData.rendererListHandleR = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskR, 0);
 			passData.rendererListHandleG = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskG, 0);
@@ -137,10 +125,6 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			passData.material = outlineMaterial;
 			passData.materialPassIndex = 1; // < The pass that does the masks composition into a single texture.
 
-			builder.UseTexture(renderObjectsTargetR, AccessFlags.ReadWrite);
-			builder.UseTexture(renderObjectsTargetG, AccessFlags.ReadWrite);
-			builder.UseTexture(renderObjectsTargetB, AccessFlags.ReadWrite);
-			builder.UseTexture(renderObjectsTargetA, AccessFlags.ReadWrite);
 			builder.UseTexture(passData.nonBlurredCombinedMask, AccessFlags.WriteAll);
 			builder.UseTexture(passData.target, AccessFlags.Write);
 			builder.UseRendererList(passData.rendererListHandleR);
@@ -148,6 +132,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			builder.UseRendererList(passData.rendererListHandleB);
 			builder.UseRendererList(passData.rendererListHandleA);
 			builder.SetRenderFunc((PassData data, UnsafeGraphContext context) => ExecuteUnsafeRenderOutlinePass(data, context));
+			builder.AllowPassCulling(false);
 		}
 
 		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Horizontal Blur Pass", out PassData passData, profilingSampler))
@@ -161,6 +146,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			builder.SetRenderAttachment(passData.target, 0);
 			builder.UseTexture(passData.source);
 			builder.SetRenderFunc((PassData data, RasterGraphContext context) => ExecutePass(data, context));
+			builder.AllowPassCulling(false);
 		}
 
 		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Vertical Blur Pass", out PassData passData, profilingSampler))
@@ -174,6 +160,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			builder.SetRenderAttachment(passData.target, 0);
 			builder.UseTexture(passData.source);
 			builder.SetRenderFunc((PassData data, RasterGraphContext context) => ExecutePass(data, context));
+			builder.AllowPassCulling(false);
 		}
 
 		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Resolve Pass", out PassData passData, profilingSampler))
@@ -191,6 +178,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			builder.UseTexture(passData.nonBlurredCombinedMask);
 			builder.UseTexture(passData.blurredRenderObjectsTarget);
 			builder.SetRenderFunc((PassData data, RasterGraphContext context) => ExecutePass(data, context));
+			builder.AllowPassCulling(false);
 		}
 
 		resourceData.cameraColor = resolveTarget;
@@ -213,21 +201,17 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	/// <param name="horizontalBlurTarget"></param>
 	/// <param name="verticalBlurTarget"></param>
 	/// <param name="resolveTarget"></param>
-	private void CreateRenderGraphTextures(RenderGraph renderGraph, UniversalCameraData cameraData, out TextureHandle renderObjectsTargetR, out TextureHandle renderObjectsTargetG, out TextureHandle renderObjectsTargetB, out TextureHandle renderObjectsTargetA, out TextureHandle nonBlurredCombinedMask, out TextureHandle horizontalBlurTarget, out TextureHandle verticalBlurTarget, out TextureHandle resolveTarget)
+	private void CreateRenderGraphTextures(RenderGraph renderGraph, UniversalCameraData cameraData, out TextureHandle nonBlurredCombinedMask, out TextureHandle horizontalBlurTarget, out TextureHandle verticalBlurTarget, out TextureHandle resolveTarget)
 	{
 		RenderTextureDescriptor cameraTargetDescriptor = cameraData.cameraTargetDescriptor;
 		cameraTargetDescriptor.depthBufferBits = (int)DepthBits.None;
 		resolveTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineResolve", false);
 
-		cameraTargetDescriptor.colorFormat = RenderTextureFormat.R8;
-		renderObjectsTargetR = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineRenderObjectsR", false);
-		renderObjectsTargetG = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineRenderObjectsG", false);
-		renderObjectsTargetB = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineRenderObjectsB", false);
-		renderObjectsTargetA = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineRenderObjectsA", false);
-
 		cameraTargetDescriptor.colorFormat = RenderTextureFormat.ARGB32;
+		
 		nonBlurredCombinedMask = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineCombinedMask", false, FilterMode.Point);
 		horizontalBlurTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineHorizontalBlur", false, FilterMode.Bilinear);
+		
 		verticalBlurTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineVerticalBlur", false, FilterMode.Bilinear);
 	}
 
@@ -338,32 +322,24 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 
 		Color bgColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
 
-		context.cmd.SetRenderTarget(passData.renderObjectsTargetR);
+		context.cmd.SetGlobalColor("_MaskColour", new Color(1f, 0.0f, 0.0f, 0.0f));
+		context.cmd.SetRenderTarget(passData.target);
 		context.cmd.ClearRenderTarget(false, true, bgColor);
 		context.cmd.DrawRendererList(passData.rendererListHandleR);
-
-		context.cmd.SetRenderTarget(passData.renderObjectsTargetG);
-		context.cmd.ClearRenderTarget(false, true, bgColor);
+		
+		context.cmd.SetGlobalColor("_MaskColour", new Color(0f, 1.0f, 0.0f, 0.0f));
 		context.cmd.DrawRendererList(passData.rendererListHandleG);
-
-		context.cmd.SetRenderTarget(passData.renderObjectsTargetB);
-		context.cmd.ClearRenderTarget(false, true, bgColor);
+		
+		context.cmd.SetGlobalColor("_MaskColour", new Color(0f, 0f, 1f, 0.0f));
 		context.cmd.DrawRendererList(passData.rendererListHandleB);
-
-		context.cmd.SetRenderTarget(passData.renderObjectsTargetA);
-		context.cmd.ClearRenderTarget(false, true, bgColor);
+		
+		context.cmd.SetGlobalColor("_MaskColour", new Color(0f, 0f, 0, 1));
 		context.cmd.DrawRendererList(passData.rendererListHandleA);
 
-		passData.material.SetTexture(OutlineRTextureId, passData.renderObjectsTargetR);
-		passData.material.SetTexture(OutlineGTextureId, passData.renderObjectsTargetG);
-		passData.material.SetTexture(OutlineBTextureId, passData.renderObjectsTargetB);
-		passData.material.SetTexture(OutlineATextureId, passData.renderObjectsTargetA);
-
 		CommandBuffer cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
-		Blitter.BlitCameraTexture(cmd, passData.target, passData.target, passData.material, passData.materialPassIndex);
 		
 		// save the non blurred mask because the previous one will be blurred
-		Blitter.BlitCameraTexture(cmd, passData.target, passData.nonBlurredCombinedMask);
+		Blitter.BlitCameraTexture(cmd, passData.target, passData.nonBlurredCombinedMask, passData.materialPassIndex);
 
 		if (usingTAA)
 			context.cmd.SetViewProjectionMatrices(cameraData.GetViewMatrix(), originalProjectionMatrix);
