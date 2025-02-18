@@ -1,6 +1,6 @@
 {
     "name": "com.cqf.urpoutline",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "displayName": "URP Outline",
     "description": "A simple outline render feature for Unity 6 URP and rendergraph. Uses URP volume system and rendering layers.",
     "unity": "6000.0",

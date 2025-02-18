@@ -9,7 +9,7 @@ Shader "Hidden/Outline"
 
         Pass
         {
-            Name "OutlineRenderObjectsR"
+            Name "OutlineRenderObjects"
             
             ZTest Always
             ZWrite Off
@@ -31,7 +31,7 @@ Shader "Hidden/Outline"
             #pragma vertex Vert
             #pragma fragment Frag
 
-            float4 _MaskColour;
+            float4 _OutlineMaskColor;
 
             struct Attributes
             {
@@ -59,43 +59,7 @@ Shader "Hidden/Outline"
 
             float4 Frag() : SV_Target
             {
-                return _MaskColour;
-            }
-
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Name "OutlineCombineMasks"
-            
-            ZTest Always
-            ZWrite Off
-            Cull Off
-            Blend Off
-            ColorMask RGBA
-
-            HLSLPROGRAM
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
-
-            #pragma vertex Vert
-            #pragma fragment Frag
-
-            TEXTURE2D_X(_Outline_R);
-            TEXTURE2D_X(_Outline_G);
-            TEXTURE2D_X(_Outline_B);
-            TEXTURE2D_X(_Outline_A);
-
-            float4 Frag(Varyings input) : SV_Target
-            {
-                float r = SAMPLE_TEXTURE2D_X(_Outline_R, sampler_PointClamp, input.texcoord);
-                float g = SAMPLE_TEXTURE2D_X(_Outline_G, sampler_PointClamp, input.texcoord);
-                float b = SAMPLE_TEXTURE2D_X(_Outline_B, sampler_PointClamp, input.texcoord);
-                float a = SAMPLE_TEXTURE2D_X(_Outline_A, sampler_PointClamp, input.texcoord);
-
-                return float4(r, g, b, a);
+                return _OutlineMaskColor;
             }
 
             ENDHLSL

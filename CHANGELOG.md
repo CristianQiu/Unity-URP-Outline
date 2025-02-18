@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3] - 2024-02-18
+
+* Slightly improved performance by rendering the [four outline masks into a single texture](https://github.com/CristianQiu/Unity-URP-Outline/pull/1).
+
 ## [0.2] - 2024-11-13
 
 * Added up to 4 layers for different colors, each one associated to a rendering layer mask.

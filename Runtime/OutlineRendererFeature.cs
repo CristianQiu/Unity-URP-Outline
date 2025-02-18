@@ -9,7 +9,6 @@ using UnityEngine.Rendering.Universal;
 [DisallowMultipleRendererFeature("Outline")]
 public sealed class OutlineRendererFeature : ScriptableRendererFeature
 {
-	
 	#region Private Attributes
 
 	[HideInInspector]
