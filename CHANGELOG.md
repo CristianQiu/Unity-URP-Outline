@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.1] - 2025-02-23
+
+* Removed empty version dependency as it was throwing errors. User should make sure that they have URP package installed before installing the outline package to avoid console errors.
+
 ## [0.3] - 2024-02-18
 
 * Slightly improved performance by rendering the [four outline masks into a single texture](https://github.com/CristianQiu/Unity-URP-Outline/pull/1).
