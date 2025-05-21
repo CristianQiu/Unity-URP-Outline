@@ -5,7 +5,7 @@ using UnityEngine.Rendering.Universal;
 /// <summary>
 /// The outline renderer feature.
 /// </summary>
-[Tooltip("Adds support to render an outline for objects.")]
+[Tooltip("Adds support to render an outline with optional fill for objects.")]
 [DisallowMultipleRendererFeature("Outline")]
 public sealed class OutlineRendererFeature : ScriptableRendererFeature
 {

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.2] - 2025-05-22
+
+* Move the outline to before rendering postprocessing so it works with postprocessing and HDR colors. Fixes issue with camera stacking not rendering the outline, and TAA seems to work slightly better now, specially with STP enabled.
+
 ## [0.3.1] - 2025-02-23
 
 * Removed empty version dependency as it was throwing errors. User should make sure that they have URP package installed before installing the outline package to avoid console errors.

@@ -15,11 +15,11 @@ public sealed class OutlineVolumeComponent : VolumeComponent, IPostProcessCompon
 	public ClampedIntParameter blurRadius = new ClampedIntParameter(5, 2, 32);
 
 	[Header("Colors")]
-	public ColorParameter color1 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), false, true, true, true);
-	public ColorParameter color2 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), false, true, true, true);
-	public ColorParameter color3 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), false, true, true, true);
-	public ColorParameter color4 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), false, true, true, true);
-	
+	public ColorParameter color1 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), true, true, true, true);
+	public ColorParameter color2 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), true, true, true, true);
+	public ColorParameter color3 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), true, true, true, true);
+	public ColorParameter color4 = new ColorParameter(new Color(0.3f, 0.75f, 1.0f, 1.0f), true, true, true, true);
+
 	[Header("Fall Offs")]
 	public ClampedFloatParameter fallOff1 = new ClampedFloatParameter(0.015f, 0.0f, 1.0f);
 	public ClampedFloatParameter fallOff2 = new ClampedFloatParameter(0.015f, 0.0f, 1.0f);

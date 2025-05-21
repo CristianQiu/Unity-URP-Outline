@@ -36,12 +36,14 @@ Shader "Hidden/Outline"
             struct Attributes
             {
                 float4 positionOS : POSITION;
+
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
+
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 

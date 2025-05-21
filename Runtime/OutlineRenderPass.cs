@@ -1,9 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
-using System.Collections.Generic;
 
 /// <summary>
 /// The outline render pass.
@@ -82,10 +82,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	public OutlineRenderPass(Material outlineMaterial) : base()
 	{
 		profilingSampler = new ProfilingSampler("Outline");
-
-		// Note: we could use before post processing to take advantage of things like HDR colors for free.
-		// There are several problems with this, the main one is that DoF blurs the outline, which feels weird in some situations.
-		renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+		renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
 		requiresIntermediateTexture = false;
 
 		this.outlineMaterial = outlineMaterial;
@@ -136,7 +133,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			passData.source = verticalBlurTarget;
 			passData.material = outlineMaterial;
 			passData.materialPassIndex = 1;
-			
+
 			builder.SetRenderAttachment(passData.target, 0);
 			builder.UseTexture(passData.source);
 			builder.SetRenderFunc((PassData data, RasterGraphContext context) => ExecutePass(data, context));
@@ -196,8 +193,8 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 
 		cameraTargetDescriptor.colorFormat = RenderTextureFormat.ARGB32;
 		nonBlurredCombinedMask = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineCombinedMask", false, FilterMode.Point);
-		horizontalBlurTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineHorizontalBlur", false, FilterMode.Bilinear);
-		verticalBlurTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineVerticalBlur", false, FilterMode.Bilinear);
+		horizontalBlurTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineHorizontalBlur", false, FilterMode.Point);
+		verticalBlurTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineVerticalBlur", false, FilterMode.Point);
 	}
 
 	/// <summary>
@@ -297,35 +294,24 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	{
 		UniversalCameraData cameraData = passData.cameraData;
 
-		// We need to remove the jitter used by TAA because the rendered outline objects do not
-		// write motion vectors and they are not resolved correctly, causing the outline to be jittered.
-		bool usingTAA = cameraData.antialiasing == AntialiasingMode.TemporalAntiAliasing;
-		Matrix4x4 originalProjectionMatrix = cameraData.GetProjectionMatrix();
-
-		if (usingTAA)
-			context.cmd.SetViewProjectionMatrices(cameraData.GetViewMatrix(), cameraData.camera.nonJitteredProjectionMatrix);
-
 		context.cmd.SetRenderTarget(passData.target);
 		context.cmd.ClearRenderTarget(false, true, new Color(0.0f, 0.0f, 0.0f, 0.0f));
 
 		context.cmd.SetGlobalColor(OutlineMaskColorId, new Color(1.0f, 0.0f, 0.0f, 0.0f));
 		context.cmd.DrawRendererList(passData.rendererListHandleR);
-		
+
 		context.cmd.SetGlobalColor(OutlineMaskColorId, new Color(0.0f, 1.0f, 0.0f, 0.0f));
 		context.cmd.DrawRendererList(passData.rendererListHandleG);
-		
+
 		context.cmd.SetGlobalColor(OutlineMaskColorId, new Color(0.0f, 0.0f, 1.0f, 0.0f));
 		context.cmd.DrawRendererList(passData.rendererListHandleB);
-		
+
 		context.cmd.SetGlobalColor(OutlineMaskColorId, new Color(0.0f, 0.0f, 0.0f, 1.0f));
 		context.cmd.DrawRendererList(passData.rendererListHandleA);
-		
+
 		// save the non blurred mask because the previous one will be blurred
 		CommandBuffer cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
 		Blitter.BlitCameraTexture(cmd, passData.target, passData.nonBlurredCombinedMask);
-
-		if (usingTAA)
-			context.cmd.SetViewProjectionMatrices(cameraData.GetViewMatrix(), originalProjectionMatrix);
 	}
 
 	#endregion
