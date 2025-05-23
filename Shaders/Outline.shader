@@ -91,7 +91,7 @@ Shader "Hidden/Outline"
 
             float4 Frag(Varyings input) : SV_Target
             {
-                float scale = _ScreenParams.y / float2(2560, 1440);
+                float scale = (float)_ScreenParams.y / 1440.0;
 
                 return GaussianBlur(input.texcoord, float2(1.0, 0.0), _BlurKernelRadius, _BlurStandardDeviation, _BlitTexture, sampler_LinearClamp, _BlitTexture_TexelSize.xy * scale);
             }
@@ -123,7 +123,7 @@ Shader "Hidden/Outline"
 
             float4 Frag(Varyings input) : SV_Target
             {
-                float scale = _ScreenParams.y / float2(2560, 1440);
+                float scale = (float)_ScreenParams.y / 1440.0;
 
                 return GaussianBlur(input.texcoord, float2(0.0, 1.0), _BlurKernelRadius, _BlurStandardDeviation, _BlitTexture, sampler_LinearClamp, _BlitTexture_TexelSize.xy * scale);
             }
