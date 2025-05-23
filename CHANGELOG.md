@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.3] - 2025-05-24
+
+* Outline is scaled to preserve its width with a 1440p reference resolution.
+
 ## [0.3.2] - 2025-05-22
 
 * Move the outline to before rendering postprocessing so it works with postprocessing and HDR colors. Fixes issue with camera stacking not rendering the outline, and TAA seems to work slightly better now, specially with STP enabled.

@@ -17,7 +17,6 @@
 
 * Does not support Unity's rendergraph compatibility mode.
 * Different outline widths per each outlined object is not currently supported.
-* Changing the resolution of the game will result in slightly different outline widths.
 * Alpha clip not supported.
 
 # Preview
