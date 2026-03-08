@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.0] - 2026-03-08
+
+* Unity 6000.3.0 or above is now required. 
+* Improved performance by reducing the number of blits and textures needed, but the outline layers are now limited to 3 instead of 4.
+* Cleanups to reduce code quantity and include newer additions to the rendergraph API.
+
 ## [0.3.3] - 2025-05-24
 
 * Outline is scaled to preserve its width with a 1440p reference resolution.
