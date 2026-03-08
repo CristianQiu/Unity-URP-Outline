@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.0] - 2026-03-08
+
+* Unity 6000.3.0 or above is now required. Reduced the amount of code while doing some cleanups and other minor improvements.
+
 ## [0.3.3] - 2025-05-24
 
 * Outline is scaled to preserve its width with a 1440p reference resolution.
