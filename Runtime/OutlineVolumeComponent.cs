@@ -13,13 +13,13 @@ public sealed class OutlineVolumeComponent : VolumeComponent, IPostProcessCompon
 {
 	#region Public Attributes
 
-	public ClampedIntParameter borderSize = new ClampedIntParameter(4, 0, 8);
+	public ClampedIntParameter borderSize = new ClampedIntParameter(2, 0, 8);
 
 	[Header("Colors")]
-	public ColorParameter color1 = new ColorParameter(new Color(1.0f, 0.0f, 0.0f, 1.0f), true, true, true);
-	public ColorParameter color2 = new ColorParameter(new Color(0.0f, 1.0f, 0.0f, 1.0f), true, true, true);
-	public ColorParameter color3 = new ColorParameter(new Color(0.0f, 0.0f, 1.0f, 1.0f), true, true, true);
-	public ColorParameter color4 = new ColorParameter(new Color(0.0f, 0.0f, 0.0f, 1.0f), true, true, true);
+	public ColorParameter color1 = new ColorParameter(Color.red, true, true, true);
+	public ColorParameter color2 = new ColorParameter(Color.green, true, true, true);
+	public ColorParameter color3 = new ColorParameter(Color.blue, true, true, true);
+	public ColorParameter color4 = new ColorParameter(Color.white, true, true, true);
 
 	[Header("Fill Alphas")]
 	public ClampedFloatParameter fillAlpha1 = new ClampedFloatParameter(0.0f, 0.0f, 1.0f);

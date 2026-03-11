@@ -12,10 +12,11 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	#region Private Attributes
 
 	[HideInInspector]
-	[SerializeField] private Shader outlineShader;
+	[SerializeField] private Shader shader;
 
-	private Material outlineMaterial;
-	private OutlineRenderPass outlineRenderPass;
+	private Material material;
+
+	private OutlineRenderPass renderPass;
 
 	#endregion
 
@@ -26,9 +27,9 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	/// </summary>
 	public override void Create()
 	{
-		ValidateResourcesForOutlineRenderPass(true);
+		ValidateResources(true);
 
-		outlineRenderPass = new OutlineRenderPass(outlineMaterial);
+		renderPass = new OutlineRenderPass(material);
 	}
 
 	/// <summary>
@@ -39,10 +40,10 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 	{
 		bool isPostProcessEnabled = renderingData.postProcessingEnabled && renderingData.cameraData.postProcessEnabled;
-		bool shouldAddOutlineRenderPass = isPostProcessEnabled && ShouldAddOutlineRenderPass(renderingData.cameraData.cameraType);
+		bool shouldAddRenderPass = isPostProcessEnabled && ShouldAddRenderPass(renderingData.cameraData.cameraType);
 
-		if (shouldAddOutlineRenderPass)
-			renderer.EnqueuePass(outlineRenderPass);
+		if (shouldAddRenderPass)
+			renderer.EnqueuePass(renderPass);
 	}
 
 	/// <summary>
@@ -53,7 +54,7 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	{
 		base.Dispose(disposing);
 
-		CoreUtils.Destroy(outlineMaterial);
+		CoreUtils.Destroy(material);
 	}
 
 	#endregion
@@ -61,38 +62,39 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	#region Methods
 
 	/// <summary>
-	/// Validates the resources used by the outline render pass.
+	/// Validates the resources used by the render pass.
 	/// </summary>
 	/// <param name="forceRefresh"></param>
 	/// <returns></returns>
-	private bool ValidateResourcesForOutlineRenderPass(bool forceRefresh)
+	private bool ValidateResources(bool forceRefresh)
 	{
 		if (forceRefresh)
 		{
 #if UNITY_EDITOR
-			outlineShader = Shader.Find("Hidden/Outline");
+			shader = Shader.Find("Hidden/Outline");
 #endif
-			CoreUtils.Destroy(outlineMaterial);
-			outlineMaterial = CoreUtils.CreateEngineMaterial(outlineShader);
+			CoreUtils.Destroy(material);
+			material = CoreUtils.CreateEngineMaterial(shader);
 		}
 
-		return outlineShader != null && outlineMaterial != null;
+		return shader != null && material != null;
 	}
 
 	/// <summary>
-	/// Gets whether the outline render pass should be enqueued to the renderer.
+	/// Gets whether the render pass should be enqueued to the renderer.
 	/// </summary>
 	/// <param name="cameraType"></param>
 	/// <returns></returns>
-	private bool ShouldAddOutlineRenderPass(CameraType cameraType)
+	private bool ShouldAddRenderPass(CameraType cameraType)
 	{
-		OutlineVolumeComponent outlineVolume = VolumeManager.instance.stack.GetComponent<OutlineVolumeComponent>();
+		OutlineVolumeComponent volume = VolumeManager.instance.stack.GetComponent<OutlineVolumeComponent>();
 
-		bool isVolumeOk = outlineVolume != null && outlineVolume.IsActive();
+		bool isVolumeOk = volume != null && volume.IsActive();
+		bool isRenderPassOk = renderPass != null;
+		bool areResourcesOk = ValidateResources(false);
 		bool isCameraOk = cameraType != CameraType.Preview && cameraType != CameraType.Reflection;
-		bool areResourcesOk = ValidateResourcesForOutlineRenderPass(false);
 
-		return isActive && isVolumeOk && isCameraOk && areResourcesOk;
+		return isActive && isVolumeOk && isRenderPassOk && areResourcesOk && isCameraOk;
 	}
 
 	#endregion

@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -17,12 +17,12 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	/// </summary>
 	private enum PassStage : byte
 	{
-		RenderObjects,
+		RenderObjectsMask,
 		ResolveOutline,
 	}
 
 	/// <summary>
-	/// Holds the data needed by the execution of the outline render pass subpasses.
+	/// Holds the data needed by the execution of the render pass.
 	/// </summary>
 	private class PassData
 	{
@@ -33,20 +33,20 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 		public Material material;
 		public int materialPassIndex;
 
-		public UniversalCameraData cameraData;
-
 		public RendererListHandle rendererListHandleR;
 		public RendererListHandle rendererListHandleG;
 		public RendererListHandle rendererListHandleB;
 		public RendererListHandle rendererListHandleA;
 
 		public TextureHandle renderedObjects;
-		public TextureHandle resolveTarget;
 	}
 
 	#endregion
 
 	#region Private Attributes
+
+	private const float DefaultRenderScale = 1.0f;
+	private const float BorderSizeScalingReferenceHeight = 1440.0f;
 
 	private static readonly ShaderTagId[] ShaderTagIds = { new ShaderTagId("SRPDefaultUnlit"), new ShaderTagId("UniversalForward"), new ShaderTagId("UniversalForwardOnly") };
 
@@ -55,28 +55,26 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	private static readonly uint RenderingLayerMaskB = RenderingLayerMask.GetMask("Outline_3");
 	private static readonly uint RenderingLayerMaskA = RenderingLayerMask.GetMask("Outline_4");
 
+	private static readonly Color[] Colors = { Color.red, Color.green, Color.blue, Color.black };
 	private static readonly int BorderSizeId = Shader.PropertyToID("_BorderSize");
-
-	private static readonly int OutlineColorsId = Shader.PropertyToID("_OutlineColors");
+	private static readonly int ColorsId = Shader.PropertyToID("_Colors");
 	private static readonly int FillAlphasId = Shader.PropertyToID("_FillAlphas");
 
-	private static readonly int RenderObjectsTargetId = Shader.PropertyToID("_OutlineRenderedObjectsMaskTexture");
+	private static readonly int TextureId = Shader.PropertyToID("_OutlineMaskTexture");
 
-	private static readonly List<Color> ColorsList = new List<Color>(4);
-
-	private Material outlineMaterial;
+	private Material material;
 
 	#endregion
 
 	#region Initialization Methods
 
-	public OutlineRenderPass(Material outlineMaterial) : base()
+	public OutlineRenderPass(Material material) : base()
 	{
 		profilingSampler = new ProfilingSampler("Outline");
 		renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
 		requiresIntermediateTexture = false;
 
-		this.outlineMaterial = outlineMaterial;
+		this.material = material;
 	}
 
 	#endregion
@@ -94,18 +92,17 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 		UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
 		UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
 
-		CreateRenderGraphTextures(renderGraph, cameraData, out TextureHandle renderedObjects, out TextureHandle resolveTarget);
+		CreateRenderGraphTextures(renderGraph, resourceData, out TextureHandle renderedObjects, out TextureHandle resolveTarget);
 
-		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Render Objects Pass", out PassData passData, profilingSampler))
+		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Mask", out PassData passData, profilingSampler))
 		{
-			passData.stage = PassStage.RenderObjects;
-			passData.cameraData = cameraData;
+			passData.stage = PassStage.RenderObjectsMask;
+			passData.material = material;
+			passData.rendererListHandleR = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskR, ColorWriteMask.Red);
+			passData.rendererListHandleG = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskG, ColorWriteMask.Green);
+			passData.rendererListHandleB = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskB, ColorWriteMask.Blue);
+			passData.rendererListHandleA = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskA, ColorWriteMask.Alpha);
 			passData.renderedObjects = renderedObjects;
-			passData.rendererListHandleR = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskR, 1);
-			passData.rendererListHandleG = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskG, 2);
-			passData.rendererListHandleB = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskB, 3);
-			passData.rendererListHandleA = CreateRendererList(renderGraph, renderingData, cameraData, RenderingLayerMaskA, 4);
-			passData.material = outlineMaterial;
 
 			builder.SetRenderAttachment(renderedObjects, 0);
 			builder.UseRendererList(passData.rendererListHandleR);
@@ -115,17 +112,17 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			builder.SetRenderFunc((PassData data, RasterGraphContext context) => ExecutePass(data, context));
 		}
 
-		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Resolve Pass", out PassData passData, profilingSampler))
+		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Resolve", out PassData passData, profilingSampler))
 		{
 			passData.stage = PassStage.ResolveOutline;
-			passData.source = resourceData.cameraColor;
-			passData.material = outlineMaterial;
-			passData.materialPassIndex = 5;
+			passData.source = renderedObjects;
+			passData.material = material;
+			passData.materialPassIndex = 1;
 			passData.renderedObjects = renderedObjects;
 
 			builder.SetRenderAttachment(resolveTarget, 0);
-			builder.UseTexture(passData.source);
-			builder.UseTexture(passData.renderedObjects);
+			builder.UseTexture(resourceData.cameraColor);
+			builder.UseTexture(renderedObjects);
 			builder.SetRenderFunc((PassData data, RasterGraphContext context) => ExecutePass(data, context));
 		}
 
@@ -137,35 +134,35 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	#region Methods
 
 	/// <summary>
-	/// Creates and returns all the necessary render graph textures.
+	/// Creates and returns all the necessary render graph texture handles.
 	/// </summary>
 	/// <param name="renderGraph"></param>
-	/// <param name="cameraData"></param>
+	/// <param name="resourceData"></param>
 	/// <param name="renderedObjects"></param>
-	/// <param name="horizontalBlurTarget"></param>
-	/// <param name="verticalBlurTarget"></param>
 	/// <param name="resolveTarget"></param>
-	private void CreateRenderGraphTextures(RenderGraph renderGraph, UniversalCameraData cameraData, out TextureHandle renderedObjects, out TextureHandle resolveTarget)
+	private void CreateRenderGraphTextures(RenderGraph renderGraph, UniversalResourceData resourceData, out TextureHandle renderedObjects, out TextureHandle resolveTarget)
 	{
-		RenderTextureDescriptor cameraTargetDescriptor = cameraData.cameraTargetDescriptor;
-		cameraTargetDescriptor.depthBufferBits = (int)DepthBits.None;
-		resolveTarget = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineResolve", false);
+		resolveTarget = renderGraph.CreateTexture(resourceData.cameraColor, "_OutlineResolve");
 
-		// TODO :optimize
-		cameraTargetDescriptor.colorFormat = RenderTextureFormat.ARGB4444;
-		renderedObjects = UniversalRenderer.CreateRenderGraphTexture(renderGraph, cameraTargetDescriptor, "_OutlineCombinedMask", false, FilterMode.Point);
+		TextureDesc cameraColorDescriptor = renderGraph.GetTextureDesc(resourceData.cameraColor);
+		cameraColorDescriptor.name = "_OutlineMask";
+		cameraColorDescriptor.colorFormat = GraphicsFormatUtility.GetGraphicsFormat(RenderTextureFormat.ARGB32, false);
+		cameraColorDescriptor.clearBuffer = true;
+		cameraColorDescriptor.clearColor = new Color(0.0f, 0.0f, 0.0f, 0.0f);
+		renderedObjects = renderGraph.CreateTexture(cameraColorDescriptor);
 	}
 
 	/// <summary>
-	/// Creates and returns the renderer list used to render the objects in the outline rendering layer.
+	/// Creates and returns the renderer list handle used to render the objects in the given
+	/// rendering layer mask with the wanted writing color mask.
 	/// </summary>
 	/// <param name="renderGraph"></param>
 	/// <param name="renderingData"></param>
 	/// <param name="cameraData"></param>
 	/// <param name="renderingLayerMask"></param>
-	/// <param name="passIndex"></param>
+	/// <param name="colorMask"></param>
 	/// <returns></returns>
-	private RendererListHandle CreateRendererList(RenderGraph renderGraph, UniversalRenderingData renderingData, UniversalCameraData cameraData, uint renderingLayerMask, int passIndex)
+	private RendererListHandle CreateRendererList(RenderGraph renderGraph, UniversalRenderingData renderingData, UniversalCameraData cameraData, uint renderingLayerMask, ColorWriteMask colorMask)
 	{
 		RendererListDesc rendererListDesc = new RendererListDesc(ShaderTagIds, renderingData.cullResults, cameraData.camera);
 
@@ -173,78 +170,88 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 		rendererListDesc.renderingLayerMask = renderingLayerMask;
 		rendererListDesc.overrideShader = null;
 		rendererListDesc.overrideShaderPassIndex = -1;
-		rendererListDesc.overrideMaterial = outlineMaterial;
-		rendererListDesc.overrideMaterialPassIndex = passIndex;
+		rendererListDesc.overrideMaterial = material;
+		rendererListDesc.overrideMaterialPassIndex = 0;
 		rendererListDesc.renderQueueRange = RenderQueueRange.all;
-		RenderStateBlock block = new RenderStateBlock(RenderStateMask.Depth);
-		block.depthState = new DepthState(false, CompareFunction.Always);
-		//rendererListDesc.stateBlock = new RenderStateBlock(RenderStateMask.Nothing);
 		rendererListDesc.sortingCriteria = SortingCriteria.None;
 		rendererListDesc.rendererConfiguration = PerObjectData.None;
 		rendererListDesc.excludeObjectMotionVectors = false;
+		rendererListDesc.stateBlock = GetRenderStateBlockToRenderWithColorMask(colorMask);
 
 		return renderGraph.CreateRendererList(rendererListDesc);
 	}
 
 	/// <summary>
-	/// Updates the material properties that are needed to render the outline.
+	/// Gets the render state block filled with the blend state information to write with the given
+	/// color mask.
 	/// </summary>
-	/// <param name="passData"></param>
-	private static void UpdateOutlineMaterialProperties(PassData passData)
+	/// <param name="colorMask"></param>
+	/// <returns></returns>
+	private RenderStateBlock GetRenderStateBlockToRenderWithColorMask(ColorWriteMask colorMask)
 	{
-		PassStage stage = passData.stage;
-		OutlineVolumeComponent outlineVolume = VolumeManager.instance.stack.GetComponent<OutlineVolumeComponent>();
-		Material outlineMaterial = passData.material;
+		bool shouldOverrideBlendState = (colorMask & ColorWriteMask.Red) != ColorWriteMask.Red;
+		RenderStateMask stateMask = shouldOverrideBlendState ? RenderStateMask.Blend : RenderStateMask.Nothing;
+		RenderStateBlock stateBlock = new RenderStateBlock(stateMask);
 
-		if (stage == PassStage.RenderObjects)
+		if (shouldOverrideBlendState)
 		{
-			// TODO: compensate border for different res
-			outlineMaterial.SetFloat(BorderSizeId, outlineVolume.borderSize.value);
+			BlendState blendState = new BlendState();
+			blendState.blendState0 = new RenderTargetBlendState(colorMask, destinationColorBlendMode: BlendMode.One, destinationAlphaBlendMode: BlendMode.One);
+			stateBlock.blendState = blendState;
 		}
-		else if (stage == PassStage.ResolveOutline)
-		{
-			while (ColorsList.Count < 4)
-				ColorsList.Add(new Color(1.0f, 1.0f, 1.0f, 1.0f));
 
-			ColorsList[0] = outlineVolume.color1.value;
-			ColorsList[1] = outlineVolume.color2.value;
-			ColorsList[2] = outlineVolume.color3.value;
-			ColorsList[3] = outlineVolume.color4.value;
-
-			outlineMaterial.SetColorArray(OutlineColorsId, ColorsList);
-
-			Vector4 fillAlphas = new Vector4(outlineVolume.fillAlpha1.value, outlineVolume.fillAlpha2.value, outlineVolume.fillAlpha3.value, outlineVolume.fillAlpha4.value);
-			outlineMaterial.SetVector(FillAlphasId, fillAlphas);
-
-			outlineMaterial.SetTexture(RenderObjectsTargetId, passData.renderedObjects);
-		}
+		return stateBlock;
 	}
 
-	private float ModifyBorderSizeAccordingToResolutionWindowAndRenderScale(float borderSize)
+	/// <summary>
+	/// Scales the border to try to keep the same size at different resolutions and/or render scales.
+	/// </summary>
+	/// <param name="borderSize"></param>
+	/// <returns></returns>
+	private static float ScaleBorderSizeAccordingToRenderedPixels(float borderSize)
 	{
-		// try to look for the render scale in the asset or default to 1 if not found
-		float renderScale = 1.0f;
-		if (UniversalRenderPipeline.asset != null)
-			renderScale = UniversalRenderPipeline.asset.renderScale;
+		float renderScale = (UniversalRenderPipeline.asset != null) ? UniversalRenderPipeline.asset.renderScale : DefaultRenderScale;
+		float renderHeight = Screen.height * renderScale;
 
-		// use the height as the reference, as it usually constrains more than width (height is
-		// lesser than width on most screens)
-		float currRenderHeight = Screen.height * renderScale;
+		float borderSizePerHeightUnit = borderSize / BorderSizeScalingReferenceHeight;
+		borderSize = borderSizePerHeightUnit * renderHeight;
 
-		// use 1440 as the reference height, as it is usually a good point between 4k and 720p, but
-		// 1080p could also be used
-		const float ReferenceHeight = 1440.0f;
+		borderSize = Mathf.Max(borderSize, 1.0f);
+		borderSize = (float)Mathf.RoundToInt(borderSize);
 
-		float borderSizePerHeightUnit = borderSize / ReferenceHeight;
-		float newBorderSize = borderSizePerHeightUnit * currRenderHeight;
+		return borderSize;
+	}
 
-		// dont let it be less than 1 (represents a one texel shift in the shader)
-		newBorderSize = Mathf.Max(newBorderSize, 1.0f);
+	/// <summary>
+	/// Updates the material parameters according to the volume settings.
+	/// </summary>
+	/// <param name="passData"></param>
+	private static void UpdateMaterialParameters(PassData passData)
+	{
+		Material material = passData.material;
 
-		// round it to sample texels at their center
-		newBorderSize = (float)Mathf.RoundToInt(newBorderSize);
+		if (passData.stage == PassStage.RenderObjectsMask)
+		{
+			OutlineVolumeComponent volume = VolumeManager.instance.stack.GetComponent<OutlineVolumeComponent>();
 
-		return newBorderSize;
+			Colors[0] = volume.color1.value;
+			Colors[1] = volume.color2.value;
+			Colors[2] = volume.color3.value;
+			Colors[3] = volume.color4.value;
+
+			float fillAlpha1 = volume.fillAlpha1.value;
+			float fillAlpha2 = volume.fillAlpha2.value;
+			float fillAlpha3 = volume.fillAlpha3.value;
+			float fillAlpha4 = volume.fillAlpha3.value;
+
+			material.SetFloat(BorderSizeId, ScaleBorderSizeAccordingToRenderedPixels(volume.borderSize.value));
+			material.SetColorArray(ColorsId, Colors);
+			material.SetVector(FillAlphasId, new Vector4(fillAlpha1, fillAlpha2, fillAlpha3, fillAlpha4));
+		}
+		else
+		{
+			material.SetTexture(TextureId, passData.renderedObjects);
+		}
 	}
 
 	/// <summary>
@@ -254,19 +261,18 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	/// <param name="context"></param>
 	private static void ExecutePass(PassData passData, RasterGraphContext context)
 	{
-		UpdateOutlineMaterialProperties(passData);
+		UpdateMaterialParameters(passData);
 
-		switch (passData.stage)
+		if (passData.stage == PassStage.RenderObjectsMask)
 		{
-			case PassStage.RenderObjects:
-				context.cmd.DrawRendererList(passData.rendererListHandleR);
-				context.cmd.DrawRendererList(passData.rendererListHandleG);
-				context.cmd.DrawRendererList(passData.rendererListHandleB);
-				context.cmd.DrawRendererList(passData.rendererListHandleA);
-				break;
-			default:
-				Blitter.BlitTexture(context.cmd, passData.source, Vector2.one, passData.material, passData.materialPassIndex);
-				break;
+			context.cmd.DrawRendererList(passData.rendererListHandleR);
+			context.cmd.DrawRendererList(passData.rendererListHandleG);
+			context.cmd.DrawRendererList(passData.rendererListHandleB);
+			context.cmd.DrawRendererList(passData.rendererListHandleA);
+		}
+		else
+		{
+			Blitter.BlitTexture(context.cmd, passData.source, Vector2.one, passData.material, passData.materialPassIndex);
 		}
 	}
 
