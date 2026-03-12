@@ -216,7 +216,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 		float borderSizePerHeightUnit = borderSize / BorderSizeScalingReferenceHeight;
 		borderSize = borderSizePerHeightUnit * renderHeight;
 
-		borderSize = Mathf.Max(borderSize, 1.0f);
+		borderSize = Mathf.Max(borderSize, 0.0f);
 		borderSize = (float)Mathf.RoundToInt(borderSize);
 
 		return borderSize;
