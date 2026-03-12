@@ -74,7 +74,7 @@ Shader "Hidden/Outline"
             
             ZTest Always
             ZWrite Off
-            Cull Back
+            Cull Off
             Blend Off
 
             HLSLPROGRAM
@@ -105,34 +105,45 @@ Shader "Hidden/Outline"
                 float2 uv = input.texcoord;
                 float2 texelSize = _BlitTexture_TexelSize.xy;
 
-                float4 maskCenter = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv);
+                float4 up = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, _BorderSize));
+                float4 right = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, 0.0));
+                float4 down = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, - _BorderSize));
+                float4 left = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, 0.0));
+                float4 rightUp = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, _BorderSize));
+                float4 rightDown = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, -_BorderSize));
+                float4 leftDown = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, -_BorderSize));
+                float4 leftUp = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, _BorderSize));
 
-                float4 maskRight = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, 0.0));
-                float4 maskLeft = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, 0.0));
-                float4 maskUp = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, _BorderSize));
-                float4 maskDown = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, - _BorderSize));
-
-                float4 maskCross = maskRight + maskLeft + maskUp + maskDown;
-
-                float4 maskRightUp = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, _BorderSize));
-                float4 maskRightDown = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, -_BorderSize));
-                float4 maskLeftDown = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, -_BorderSize));
-                float4 maskLeftUp = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, _BorderSize));
-
-                float4 maskDiagonal = maskRightUp + maskRightDown + maskLeftDown + maskLeftUp;
-
-                float4 rgbaMask = step(0.0001, maskCross + maskDiagonal) - maskCenter;
-
-                float4 color1 = rgbaMask.r * _Colors[0];
-                float4 color2 = rgbaMask.g * _Colors[1];
-                float4 color3 = rgbaMask.b * _Colors[2];
-                float4 color4 = rgbaMask.a * _Colors[3];
-
-                float4 colorResult = color1 + color2 + color3 + color4;
+                float4 center = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv);
+                float4 cross = (right + left + up + down);
+                float4 diagonal = (rightUp + rightDown + leftDown + leftUp);
                 
-                return colorResult;
+                float4 insideFillMask = saturate(center * 1000);
+                float4 expandedMask = saturate((center + cross + diagonal) * 1000);
 
-                //float4 cameraColor = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv);
+                float4 color1 = expandedMask.r * _Colors[0];
+                float4 color2 = expandedMask.g * _Colors[1];
+                float4 color3 = expandedMask.b * _Colors[2];
+                float4 color4 = expandedMask.a * _Colors[3];
+
+                color1.a = lerp(color1.a, _FillAlphas.r, insideFillMask.r);
+                color2.a = lerp(color2.a, _FillAlphas.g, insideFillMask.g);
+                color3.a = lerp(color3.a, _FillAlphas.b, insideFillMask.b);
+                color4.a = lerp(color4.a, _FillAlphas.a, insideFillMask.a);
+
+                float4 finalColor = color4;
+
+                finalColor.rgb = lerp(finalColor.rgb, color3.rgb, color3.a);
+                finalColor.a = finalColor.a + color3.a * (1.0 - finalColor.a);
+                finalColor.rgb = lerp(finalColor.rgb, color2.rgb, color2.a);
+                finalColor.a = finalColor.a + color2.a * (1.0 - finalColor.a);
+                finalColor.rgb = lerp(finalColor.rgb, color1.rgb, color1.a);
+                finalColor.a = finalColor.a + color1.a * (1.0 - finalColor.a);
+
+                float4 cameraColor = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv);
+                float3 composedColor = lerp(cameraColor.rgb, finalColor.rgb, finalColor.a);
+
+                return float4(composedColor, cameraColor.a);
             }
 
             ENDHLSL

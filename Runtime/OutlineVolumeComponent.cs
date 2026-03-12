@@ -13,7 +13,7 @@ public sealed class OutlineVolumeComponent : VolumeComponent, IPostProcessCompon
 {
 	#region Public Attributes
 
-	public ClampedIntParameter borderSize = new ClampedIntParameter(2, 0, 8);
+	public ClampedIntParameter borderSize = new ClampedIntParameter(0, 0, 16);
 
 	[Header("Colors")]
 	public ColorParameter color1 = new ColorParameter(Color.red, true, true, true);

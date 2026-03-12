@@ -71,7 +71,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 	public OutlineRenderPass(Material material) : base()
 	{
 		profilingSampler = new ProfilingSampler("Outline");
-		renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+		renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
 		requiresIntermediateTexture = false;
 
 		this.material = material;
@@ -94,7 +94,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 
 		CreateRenderGraphTextures(renderGraph, resourceData, out TextureHandle renderedObjects, out TextureHandle resolveTarget);
 
-		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Mask", out PassData passData, profilingSampler))
+		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Draw Outline Mask", out PassData passData, profilingSampler))
 		{
 			passData.stage = PassStage.RenderObjectsMask;
 			passData.material = material;
@@ -115,7 +115,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 		using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass("Outline Resolve", out PassData passData, profilingSampler))
 		{
 			passData.stage = PassStage.ResolveOutline;
-			passData.source = renderedObjects;
+			passData.source = resourceData.cameraColor;
 			passData.material = material;
 			passData.materialPassIndex = 1;
 			passData.renderedObjects = renderedObjects;
@@ -242,7 +242,7 @@ public sealed class OutlineRenderPass : ScriptableRenderPass
 			float fillAlpha1 = volume.fillAlpha1.value;
 			float fillAlpha2 = volume.fillAlpha2.value;
 			float fillAlpha3 = volume.fillAlpha3.value;
-			float fillAlpha4 = volume.fillAlpha3.value;
+			float fillAlpha4 = volume.fillAlpha4.value;
 
 			material.SetFloat(BorderSizeId, ScaleBorderSizeAccordingToRenderedPixels(volume.borderSize.value));
 			material.SetColorArray(ColorsId, Colors);
