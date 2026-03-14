@@ -131,14 +131,13 @@ Shader "Hidden/Outline"
                 color3.a = lerp(color3.a, _FillAlphas.b, insideFillMask.b);
                 color4.a = lerp(color4.a, _FillAlphas.a, insideFillMask.a);
 
-                float4 finalColor = color4;
+                color1.rgb *= color1.a;
+                color2.rgb *= color2.a;
+                color3.rgb *= color3.a;
+                color4.rgb *= color4.a;
 
-                finalColor.rgb = lerp(finalColor.rgb, color3.rgb, color3.a);
-                finalColor.a = finalColor.a + color3.a * (1.0 - finalColor.a);
-                finalColor.rgb = lerp(finalColor.rgb, color2.rgb, color2.a);
-                finalColor.a = finalColor.a + color2.a * (1.0 - finalColor.a);
-                finalColor.rgb = lerp(finalColor.rgb, color1.rgb, color1.a);
-                finalColor.a = finalColor.a + color1.a * (1.0 - finalColor.a);
+                float4 finalColor = (color1 + color2 + color3 + color4) / max(1.0 , expandedMask.r + expandedMask.g + expandedMask.b + expandedMask.a);
+                finalColor.a = Max3(color1.a, color2.a, max(color3.a, color4.a));;
 
                 float4 cameraColor = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv);
                 float3 composedColor = lerp(cameraColor.rgb, finalColor.rgb, finalColor.a);
