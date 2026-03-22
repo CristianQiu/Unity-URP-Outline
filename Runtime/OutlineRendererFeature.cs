@@ -16,7 +16,8 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 
 	private Material material;
 
-	private OutlineRenderPass renderPass;
+	private OutlineDrawMaskRenderPass drawMaskRenderPass;
+	private OutlineResolveRenderPass resolveRenderPass;
 
 	#endregion
 
@@ -29,7 +30,8 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	{
 		ValidateResources(true);
 
-		renderPass = new OutlineRenderPass(material);
+		drawMaskRenderPass = new OutlineDrawMaskRenderPass(material);
+		resolveRenderPass = new OutlineResolveRenderPass(material);
 	}
 
 	/// <summary>
@@ -40,10 +42,13 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 	{
 		bool isPostProcessEnabled = renderingData.postProcessingEnabled && renderingData.cameraData.postProcessEnabled;
-		bool shouldAddRenderPass = isPostProcessEnabled && ShouldAddRenderPass(renderingData.cameraData.cameraType);
+		bool shouldAddRenderPasses = isPostProcessEnabled && ShouldAddRenderPasses(renderingData.cameraData.cameraType);
 
-		if (shouldAddRenderPass)
-			renderer.EnqueuePass(renderPass);
+		if (shouldAddRenderPasses)
+		{
+			renderer.EnqueuePass(drawMaskRenderPass);
+			renderer.EnqueuePass(resolveRenderPass);
+		}
 	}
 
 	/// <summary>
@@ -62,7 +67,7 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	#region Methods
 
 	/// <summary>
-	/// Validates the resources used by the render pass.
+	/// Validates the resources used by the render passes.
 	/// </summary>
 	/// <param name="forceRefresh"></param>
 	/// <returns></returns>
@@ -81,20 +86,20 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	}
 
 	/// <summary>
-	/// Gets whether the render pass should be enqueued to the renderer.
+	/// Gets whether the render passes should be enqueued to the renderer.
 	/// </summary>
 	/// <param name="cameraType"></param>
 	/// <returns></returns>
-	private bool ShouldAddRenderPass(CameraType cameraType)
+	private bool ShouldAddRenderPasses(CameraType cameraType)
 	{
 		OutlineVolumeComponent volume = VolumeManager.instance.stack.GetComponent<OutlineVolumeComponent>();
 
 		bool isVolumeOk = volume != null && volume.IsActive();
-		bool isRenderPassOk = renderPass != null;
+		bool areRenderPassesOk = drawMaskRenderPass != null && resolveRenderPass != null;
 		bool areResourcesOk = ValidateResources(false);
 		bool isCameraOk = cameraType != CameraType.Preview && cameraType != CameraType.Reflection;
 
-		return isActive && isVolumeOk && isRenderPassOk && areResourcesOk && isCameraOk;
+		return isActive && isVolumeOk && areRenderPassesOk && areResourcesOk && isCameraOk;
 	}
 
 	#endregion

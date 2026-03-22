@@ -37,8 +37,8 @@ public sealed class OutlineVolumeComponent : VolumeComponent, IPostProcessCompon
 	/// <returns></returns>
 	public bool IsActive()
 	{
-		bool colorAlphaActive = color1.value.a > 0.0f || color2.value.a > 0.0f || color1.value.a > 0.0f || color1.value.a > 0.0f;
-		bool fillAlphaActive = fillAlpha1.value > 0.0f || fillAlpha2.value > 0.0f || fillAlpha3.value > 0.0f || fillAlpha4.value > 0.0f;
+		bool colorAlphaActive = (color1.value.a + color2.value.a + color3.value.a + color4.value.a) > 0.0f;
+		bool fillAlphaActive = (fillAlpha1.value + fillAlpha2.value + fillAlpha3.value + fillAlpha4.value) > 0.0f;
 
 		return (borderSize.value > 0 && colorAlphaActive) || fillAlphaActive;
 	}
