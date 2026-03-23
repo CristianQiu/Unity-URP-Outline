@@ -9,6 +9,12 @@ using UnityEngine.Rendering.Universal;
 [DisallowMultipleRendererFeature("Outline")]
 public sealed class OutlineRendererFeature : ScriptableRendererFeature
 {
+	#region Public Attributes
+
+	public static bool ForceCullPass = false;
+
+	#endregion
+
 	#region Private Attributes
 
 	[HideInInspector]
@@ -42,7 +48,7 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 	public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
 	{
 		bool isPostProcessEnabled = renderingData.postProcessingEnabled && renderingData.cameraData.postProcessEnabled;
-		bool shouldAddRenderPasses = isPostProcessEnabled && ShouldAddRenderPasses(renderingData.cameraData.cameraType);
+		bool shouldAddRenderPasses = !ForceCullPass && isPostProcessEnabled && ShouldAddRenderPasses(renderingData.cameraData.cameraType);
 
 		if (shouldAddRenderPasses)
 		{
@@ -100,6 +106,20 @@ public sealed class OutlineRendererFeature : ScriptableRendererFeature
 		bool isCameraOk = cameraType != CameraType.Preview && cameraType != CameraType.Reflection;
 
 		return isActive && isVolumeOk && areRenderPassesOk && areResourcesOk && isCameraOk;
+	}
+
+	#endregion
+
+	#region Domain Reload Methods
+
+	/// <summary>
+	/// Function that gets called when domain reload is deactivated in order to do manual reset of
+	/// static fields.
+	/// </summary>
+	[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+	private static void ResetStaticFields()
+	{
+		ForceCullPass = false;
 	}
 
 	#endregion

@@ -13,6 +13,7 @@
 * Enable post-processing both in your camera and URP Renderer.
 * Add a volume to your scene and add override: "Custom->Outline".
 * Add the "Outline_1" rendering layer to the rendering layer mask of the object you want to be outlined, either through the UI or using code. The same applies to the rest of the layers that you should have added before. Each layer has different parameters in the outline volume, with the exception of outline width, represented by the "Border Size" parameter, which is the same for all of them for technical and performance reasons.
+* For programmers, there is a static field called "ForceCullPass" in OutlineRendererFeature. This field can be set to true to completely prevent the associated passes to be rendered to squish extra performance. You should track which renderers you add to the outline layers, and when there are no renderers to render in any of the layers set the ForceCullPass flag to true. Rendergraph does not allow a built in way to do this.
 
 # Limitations
 
