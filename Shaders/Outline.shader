@@ -14,7 +14,7 @@ Shader "Hidden/Outline"
             ZTest Always
             ZWrite Off
             Cull Off
-            Blend One One
+            Blend Off
             ColorMask R
 
             HLSLPROGRAM
