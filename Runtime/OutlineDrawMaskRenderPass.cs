@@ -42,7 +42,7 @@ public sealed class OutlineDrawMaskRenderPass : ScriptableRenderPass
 
 	public OutlineDrawMaskRenderPass(Material material) : base()
 	{
-		profilingSampler = new ProfilingSampler("Outline");
+		profilingSampler = new ProfilingSampler("Outline Draw Mask");
 		renderPassEvent = RenderPassEvent.BeforeRenderingOpaques;
 		requiresIntermediateTexture = false;
 

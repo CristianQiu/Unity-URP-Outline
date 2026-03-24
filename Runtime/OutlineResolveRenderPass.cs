@@ -46,7 +46,7 @@ public sealed class OutlineResolveRenderPass : ScriptableRenderPass
 
 	public OutlineResolveRenderPass(Material material) : base()
 	{
-		profilingSampler = new ProfilingSampler("Outline");
+		profilingSampler = new ProfilingSampler("Outline Resolve");
 		renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
 		requiresIntermediateTexture = false;
 
