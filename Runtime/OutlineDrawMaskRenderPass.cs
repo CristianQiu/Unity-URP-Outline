@@ -147,7 +147,7 @@ public sealed class OutlineDrawMaskRenderPass : ScriptableRenderPass
 		if (shouldOverrideBlendState)
 		{
 			BlendState blendState = new BlendState();
-			blendState.blendState0 = new RenderTargetBlendState(colorMask, destinationColorBlendMode: BlendMode.One, destinationAlphaBlendMode: BlendMode.One);
+			blendState.blendState0 = new RenderTargetBlendState(colorMask);
 			stateBlock.blendState = blendState;
 		}
 
