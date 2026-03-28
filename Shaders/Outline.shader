@@ -58,11 +58,11 @@ Shader "Hidden/Outline"
                 return OUT;
             }
 
-            float4 Frag(Varyings input) : SV_Target
+            half4 Frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 
-                return float4(1.0, 1.0, 1.0, 1.0);
+                return 1.0h;
             }
 
             ENDHLSL
@@ -89,55 +89,58 @@ Shader "Hidden/Outline"
             float4 _OutlineMaskTexture_TexelSize;
 
             float _BorderSize;
-            float4 _Colors[4] = 
+            half4 _Colors[4] = 
             {
-                float4(1.0, 1.0, 1.0, 1.0),
-                float4(1.0, 1.0, 1.0, 1.0),
-                float4(1.0, 1.0, 1.0, 1.0),
-                float4(1.0, 1.0, 1.0, 1.0),
+                half4(1.0, 1.0, 1.0, 1.0),
+                half4(1.0, 1.0, 1.0, 1.0),
+                half4(1.0, 1.0, 1.0, 1.0),
+                half4(1.0, 1.0, 1.0, 1.0),
             };
-            float4 _FillAlphas;
+            half4 _FillAlphas;
 
-            float4 Frag(Varyings input) : SV_Target
+            half4 Frag(Varyings input) : SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
                 float2 uv = input.texcoord;
                 float2 texelSize = _OutlineMaskTexture_TexelSize.xy;
 
-                float4 top = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, _BorderSize));
-                float4 right = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, 0.0));
-                float4 bottom = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, - _BorderSize));
-                float4 left = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, 0.0));
-                float4 rightTop = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, _BorderSize));
-                float4 rightBottom = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, -_BorderSize));
-                float4 leftBottom = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, -_BorderSize));
-                float4 leftTop = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, _BorderSize));
+                half4 top = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, _BorderSize));
+                half4 right = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, 0.0));
+                half4 bottom = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(0.0, - _BorderSize));
+                half4 left = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, 0.0));
+                half4 rightTop = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, _BorderSize));
+                half4 rightBottom = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(_BorderSize, -_BorderSize));
+                half4 leftBottom = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, -_BorderSize));
+                half4 leftTop = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv + texelSize * float2(-_BorderSize, _BorderSize));
 
-                float4 center = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv);
-                float4 cross = (right + left + top + bottom);
-                float4 diagonal = (rightTop + rightBottom + leftBottom + leftTop);
-                float4 total = cross + diagonal;
+                half4 center = SAMPLE_TEXTURE2D_X(_OutlineMaskTexture, sampler_PointClamp, uv);
+                half4 cross = (right + left + top + bottom);
+                half4 diagonal = (rightTop + rightBottom + leftBottom + leftTop);
+                half4 total = cross + diagonal;
                 
-                float4 insideFillMask = saturate(center * 1000);
-                float4 expandedMask = saturate((center + total) * 1000);
+                half4 insideFillMask = saturate(center * 1000.0h);
+                half4 expandedMask = saturate((center + total) * 1000.0h);
 
-                float4 color1 = expandedMask.r * _Colors[0];
-                float4 color2 = expandedMask.g * _Colors[1];
-                float4 color3 = expandedMask.b * _Colors[2];
-                float4 color4 = expandedMask.a * _Colors[3];
+                half4 color1 = expandedMask.r * _Colors[0];
+                half4 color2 = expandedMask.g * _Colors[1];
+                half4 color3 = expandedMask.b * _Colors[2];
+                half4 color4 = expandedMask.a * _Colors[3];
 
-                color1.a = lerp(color1.a, _FillAlphas.r, insideFillMask.r);
-                color2.a = lerp(color2.a, _FillAlphas.g, insideFillMask.g);
-                color3.a = lerp(color3.a, _FillAlphas.b, insideFillMask.b);
-                color4.a = lerp(color4.a, _FillAlphas.a, insideFillMask.a);
+                half4 colorAlphas = half4(color1.a, color2.a, color3.a, color4.a);
+                colorAlphas = lerp(colorAlphas, _FillAlphas, insideFillMask);
+
+                color1.a = colorAlphas.x;
+                color2.a = colorAlphas.y;
+                color3.a = colorAlphas.z;
+                color4.a = colorAlphas.w;
 
                 color1.rgb *= color1.a;
                 color2.rgb *= color2.a;
                 color3.rgb *= color3.a;
                 color4.rgb *= color4.a;
 
-                float4 finalColor = (color1 + color2 + color3 + color4) / max(1.0 , expandedMask.r + expandedMask.g + expandedMask.b + expandedMask.a);
+                half4 finalColor = (color1 + color2 + color3 + color4) / max(1.0h, expandedMask.r + expandedMask.g + expandedMask.b + expandedMask.a);
                 finalColor.a = Max3(color1.a, color2.a, max(color3.a, color4.a));;
 
                 return finalColor;
